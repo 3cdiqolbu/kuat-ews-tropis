@@ -137,7 +137,9 @@ st.markdown("""
 def load_pipeline():
     try:
         return joblib.load('ews_pipeline_lengkap.pkl')
-    except Exception:
+    except Exception as e:
+        # INI YANG KITA UBAH: Menampilkan pesan error asli berwarna merah
+        st.error(f"ALASAN GAGAL LOAD MODEL: {e}") 
         return None
 
 @st.cache_data
