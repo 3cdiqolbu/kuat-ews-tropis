@@ -237,24 +237,43 @@ if menu == "Dashboard":
             
         submit = st.form_submit_button("PROCESS AUDIT", use_container_width=True)
 
-    # --- OUTPUT SECTION ---
-    if submit:
+if submit:
         if pipeline is not None:
-            pakan_map = {"Green Fodder": "Green_Fodder", "Dry Fodder": "Dry_Fodder", "Concentrates": "Concentrates"}
-            manajemen_map = {"Pastoral": "Pastoral", "Semi-Intensive": "Semi_Intensive", "Intensive": "Intensive"}
+            # PERBAIKAN 1: Ambil nama negara yang valid berdasarkan region yang dipilih
+            # (Misal: Jika Asia, otomatis Country = "Indonesia" agar dikenali model)
+            negara_valid = region_mapping[kawasan_pilihan][0]
+            
+            # PERBAIKAN 2: Kembalikan format string sesuai dataset asli (biasanya tanpa underscore)
+            # Jika datasetmu memang pakai underscore, silakan kembalikan seperti semula.
+            pakan_map = {"Green Fodder": "Green Fodder", "Dry Fodder": "Dry Fodder", "Concentrates": "Concentrates"}
+            manajemen_map = {"Pastoral": "Pastoral", "Semi-Intensive": "Semi-Intensive", "Intensive": "Intensive"}
             mapping_region = {"Asia": "Asia", "Africa": "Africa", "South America": "South_America", "Oceania": "Oceania"}
             
+            # PERBAIKAN 3: Pastikan semua nilai dibungkus kurung siku [ ] agar Pandas aman
             raw_input = pd.DataFrame({
-                'Body_Temperature_C': suhu, 'Heart_Rate_bpm': bpm, 'Rumination_Time_hrs': ruminasi,
-                'Feed_Type': pakan_map[tipe_pakan_ui], 'Feed_Quantity_kg': jml_pakan,
-                'Tropical_Region_Category': mapping_region[kawasan_pilihan], 'Country': "ID", 
-                'Management_System': manajemen_map[manajemen_ui], 'Breed': "Brahman", 
-                'Age_Months': umur, 'Weight_kg': berat
-            }, index=[0]) 
+                'Body_Temperature_C': [suhu], 
+                'Heart_Rate_bpm': [bpm], 
+                'Rumination_Time_hrs': [ruminasi],
+                'Feed_Quantity_kg': [jml_pakan],
+                'Age_Months': [umur], 
+                'Weight_kg': [berat],
+                'Feed_Type': [pakan_map[tipe_pakan_ui]], 
+                'Tropical_Region_Category': [mapping_region[kawasan_pilihan]], 
+                'Country': [negara_valid],  # <--- Ini menggantikan "ID"
+                'Management_System': [manajemen_map[manajemen_ui]], 
+                'Breed': ["Brahman"]
+            }) 
             
             with st.spinner("Executing analysis..."):
                 time.sleep(1)
-                prediction = pipeline.predict(raw_input)[0]
+                
+                # PERBAIKAN 4: Tambahkan Try-Except agar jika error, pesannya bisa dibaca manusia
+                try:
+                    prediction = pipeline.predict(raw_input)[0]
+                except Exception as e:
+                    st.error(f"❌ MESIN AI MENOLAK DATA: {e}")
+                    st.info("Cek nama kolom atau nilai yang kamu masukkan, pastikan sama persis dengan dataset di Google Colab.")
+                    st.stop() # Hentikan proses agar dashboard tidak berantakan
 
             st.markdown("---")
             
@@ -272,7 +291,7 @@ if menu == "Dashboard":
                 title_card = "Verified Cattle Record"
             else:
                 disp_breed = "New Registration"
-                disp_country = "Not Recorded"
+                disp_country = negara_valid # Menyesuaikan dengan inputan yang berhasil
                 disp_region = f"{kawasan_pilihan} Zone"
                 disp_vaksin = "No Historical Data"
                 title_card = "Unverified Field Entry"
@@ -285,6 +304,8 @@ if menu == "Dashboard":
                     st.session_state['history'].append({"ID": disp_id, "Time": datetime.now().strftime("%H:%M"), "Status": "INFECTED"})
                 else:
                     st.markdown('<div class="ews-sehat">DISEASE STATUS: HEALTHY</div>', unsafe_allow_html=True)
+                
+                # Catatan: Gambar akan tampil jika error diatasi
                 st.image("https://images.unsplash.com/photo-1546445317-29f4545e9d53?w=500", caption="Visualization Matrix", use_container_width=True)
 
             with col_detail:
