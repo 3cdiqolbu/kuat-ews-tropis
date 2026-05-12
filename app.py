@@ -162,7 +162,6 @@ if 'history' not in st.session_state:
 # ==========================================
 # 3. SIDEBAR NAVIGATION
 # ==========================================
-# Sidebar Header with DARK TEXT
 st.sidebar.markdown("""
 <div style="padding: 20px 0; text-align: center; border-bottom: 2px solid #2c3e50; margin-bottom: 10px;">
     <h1 style="color: #2c3e50; font-size: 28px; margin: 0; font-weight: 900; letter-spacing: 2px;">KUAT.</h1>
@@ -237,19 +236,17 @@ if menu == "Dashboard":
             
         submit = st.form_submit_button("PROCESS AUDIT", use_container_width=True)
 
-if submit:
+    # --- OUTPUT SECTION ---
+    if submit:
         if pipeline is not None:
-            # PERBAIKAN 1: Ambil nama negara yang valid berdasarkan region yang dipilih
-            # (Misal: Jika Asia, otomatis Country = "Indonesia" agar dikenali model)
+            # Mengambil data valid agar model ML tidak bingung
             negara_valid = region_mapping[kawasan_pilihan][0]
             
-            # PERBAIKAN 2: Kembalikan format string sesuai dataset asli (biasanya tanpa underscore)
-            # Jika datasetmu memang pakai underscore, silakan kembalikan seperti semula.
             pakan_map = {"Green Fodder": "Green Fodder", "Dry Fodder": "Dry Fodder", "Concentrates": "Concentrates"}
             manajemen_map = {"Pastoral": "Pastoral", "Semi-Intensive": "Semi-Intensive", "Intensive": "Intensive"}
             mapping_region = {"Asia": "Asia", "Africa": "Africa", "South America": "South_America", "Oceania": "Oceania"}
             
-            # PERBAIKAN 3: Pastikan semua nilai dibungkus kurung siku [ ] agar Pandas aman
+            # Membungkus data input ke dalam format [list] agar sesuai dimensi matrix Pandas
             raw_input = pd.DataFrame({
                 'Body_Temperature_C': [suhu], 
                 'Heart_Rate_bpm': [bpm], 
@@ -259,7 +256,7 @@ if submit:
                 'Weight_kg': [berat],
                 'Feed_Type': [pakan_map[tipe_pakan_ui]], 
                 'Tropical_Region_Category': [mapping_region[kawasan_pilihan]], 
-                'Country': [negara_valid],  # <--- Ini menggantikan "ID"
+                'Country': [negara_valid],  
                 'Management_System': [manajemen_map[manajemen_ui]], 
                 'Breed': ["Brahman"]
             }) 
@@ -267,13 +264,13 @@ if submit:
             with st.spinner("Executing analysis..."):
                 time.sleep(1)
                 
-                # PERBAIKAN 4: Tambahkan Try-Except agar jika error, pesannya bisa dibaca manusia
+                # Blok Try-Except untuk menangani error model
                 try:
                     prediction = pipeline.predict(raw_input)[0]
                 except Exception as e:
                     st.error(f"❌ MESIN AI MENOLAK DATA: {e}")
-                    st.info("Cek nama kolom atau nilai yang kamu masukkan, pastikan sama persis dengan dataset di Google Colab.")
-                    st.stop() # Hentikan proses agar dashboard tidak berantakan
+                    st.info("Pastikan input data/nama kolom sesuai dengan format pelatihan di Colab.")
+                    st.stop()
 
             st.markdown("---")
             
@@ -291,7 +288,7 @@ if submit:
                 title_card = "Verified Cattle Record"
             else:
                 disp_breed = "New Registration"
-                disp_country = negara_valid # Menyesuaikan dengan inputan yang berhasil
+                disp_country = negara_valid 
                 disp_region = f"{kawasan_pilihan} Zone"
                 disp_vaksin = "No Historical Data"
                 title_card = "Unverified Field Entry"
@@ -305,7 +302,6 @@ if submit:
                 else:
                     st.markdown('<div class="ews-sehat">DISEASE STATUS: HEALTHY</div>', unsafe_allow_html=True)
                 
-                # Catatan: Gambar akan tampil jika error diatasi
                 st.image("https://images.unsplash.com/photo-1546445317-29f4545e9d53?w=500", caption="Visualization Matrix", use_container_width=True)
 
             with col_detail:
@@ -347,14 +343,14 @@ elif menu == "Analysis Schema":
 # 6. ABOUT SYSTEM MENU
 # ==========================================
 else:
-    st.title("About KUAT.")
+    st.title("About KUAT. Framework")
     st.markdown("""
-    ### Tropical Outbreak Mitigation Engine
+    ### 🛡️ Tropical Outbreak Mitigation Engine
     **KUAT. (Kesehatan Utama Analisis Ternak)** adalah kerangka kerja *Intelligence* yang dirancang khusus sebagai sistem peringatan dini (*Early Warning System*) terhadap wabah penyakit ternak di kawasan tropis. Proyek ini mengintegrasikan kecerdasan buatan dengan standar medik veteriner untuk menekan risiko kerugian ekonomi akibat keterlambatan diagnosa.
 
     ---
 
-    ### Tiga Pilar Intelligence
+    ### 🧠 Tiga Pilar Intelligence
     Sistem ini bekerja dengan menggabungkan tiga sudut pandang data yang komprehensif:
     1. **Clinical Intelligence:** Menganalisis sensor biometrik (Suhu, Detak Jantung, Ruminasi) untuk mendeteksi anomali kesehatan secara *real-time*.
     2. **Ecological Intelligence:** Mempertimbangkan faktor lingkungan seperti sistem manajemen kandang dan jenis pakan yang sangat berpengaruh pada imunitas ternak di iklim tropis.
@@ -362,7 +358,7 @@ else:
 
     ---
 
-    ### Engine Optimization & The Recall Paradox
+    ### ⚙️ Engine Optimization & The Recall Paradox
     Berbeda dengan model AI standar yang hanya mengejar akurasi, mesin **KUAT.** dikalibrasi secara ketat untuk mengutamakan **Keamanan Diagnosa**:
     - **SMOTE Balancing:** Melalui teknik *Synthetic Minority Over-sampling*, model dilatih untuk memiliki "insting" yang tajam dalam mengenali gejala penyakit meskipun data di lapangan tidak seimbang.
     - **Feature Selection (RFE):** Algoritma telah dirampingkan melalui *Recursive Feature Elimination* untuk hanya berfokus pada indikator paling murni (Suhu Tubuh & Ruminasi).
@@ -370,7 +366,7 @@ else:
 
     ---
 
-    ### Real-World Application
+    ### 🚀 Real-World Application
     Sistem ini mengimplementasikan **Dual-Logic Diagnostic**:
     - **Verified Records:** Penarikan data historis (riwayat vaksin & genetik) otomatis untuk ternak yang terdaftar di basis data.
     - **Field Inference:** Kemampuan model untuk melakukan diagnosa mandiri (*generalization*) secara instan pada ternak baru yang belum memiliki rekam medis di lapangan.
